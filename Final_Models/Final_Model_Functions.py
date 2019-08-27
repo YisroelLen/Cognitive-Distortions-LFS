@@ -1,3 +1,10 @@
+import pandas as pd
+import numpy as np
+import regex as re
+import nltk
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+
 # Emotion Prediction model based on words.
 def word_class_model(df, df_sentences, word_df_name):
     pos_emo_list = [] # positive emotion list, I'm going to put the non-negative weights in here
@@ -22,22 +29,13 @@ def word_class_model(df, df_sentences, word_df_name):
     # Incorporate lists into dataframe
     temp_df['Positive_Word_Weight'] = pos_emo_list
     temp_df['Negative_Word_Weight'] = neg_emo_list
-    # Compare the columns
-    Word_Predictions_Mask = temp_df['Positive_Word_Weight'] < temp_df['Negative_Word_Weight']
-    # create a list for our final predictionc
-    Final_Predictions = []
-    # Convert Trues and Falses into 1s and -1s.
-    for truthy in Word_Predictions_Mask:
-        if truthy == True:
-            Final_Predictions.append(1) # If negative
-        else:
-            Final_Predictions.append(-1) # If anything but negative
+    # Compare the columns return 1s for Negative, -1s for Positive
+    Final_Predictions = np.where(temp_df['Positive_Word_Weight'] < temp_df['Negative_Word_Weight'], 1, -1)
     # return final prediction
     return Final_Predictions
 
 # Final model predictor
-# final model function
-def combined_model_predictor(df_to_predict, feature, word_df_name, final_model_list):
+def combined_model_predictor(df_to_predict, feature, word_df_name, final_model_list, weight_list):
         def word_class_model(df, df_sentences, word_df_name):
             pos_emo_list = [] # positive emotion list, I'm going to put the non-negative weights in here
             neg_emo_list = [] # negative emotion list, I'm going to put the negative weights in here
@@ -61,16 +59,8 @@ def combined_model_predictor(df_to_predict, feature, word_df_name, final_model_l
             # Incorporate lists into dataframe
             temp_df['Positive_Word_Weight'] = pos_emo_list
             temp_df['Negative_Word_Weight'] = neg_emo_list
-            # Compare the columns
-            Word_Predictions_Mask = temp_df['Positive_Word_Weight'] < temp_df['Negative_Word_Weight']
-            # create a list for our final predictionc
-            Final_Predictions = []
-            # Convert Trues and Falses into 1s and -1s.
-            for truthy in Word_Predictions_Mask:
-                if truthy == True:
-                    Final_Predictions.append(1) # If negative
-                else:
-                    Final_Predictions.append(-1) # If anything but negative
+            # Compare the columns return 1s for Negative, -1s for Positive
+            Final_Predictions = np.where(temp_df['Positive_Word_Weight'] < temp_df['Negative_Word_Weight'], 1, -1)
             # return final prediction
             return Final_Predictions
         predictions = []
@@ -78,10 +68,10 @@ def combined_model_predictor(df_to_predict, feature, word_df_name, final_model_l
             predictions.append(model.predict(df_to_predict[feature]))
         word_model = word_class_model(df_to_predict, feature, word_df_name)
         predictions.append(word_model)
-        predicted_weights = ((np.array(predictions[0])*emot_long_weight)+
-                                (np.array(predictions[1])*pos_neg_weight) +
-                                (np.array(predictions[2])*emot_short_weight) +
-                              (np.array(predictions[3])*word_weights))
+        predicted_weights = ((np.array(predictions[0])*weight_list[0])+
+                                (np.array(predictions[1])*weight_list[1]) +
+                                (np.array(predictions[2])*weight_list[2]) +
+                              (np.array(predictions[3])*weight_list[3]))
         final_predictions = []
         for pred in predicted_weights:
                 if pred > 0:
@@ -89,3 +79,24 @@ def combined_model_predictor(df_to_predict, feature, word_df_name, final_model_l
                 else:
                     final_predictions.append(-1)
         return final_predictions
+
+# shortening function
+def shorten(value):
+    lemmatizer = WordNetLemmatizer()
+    value = re.sub(r"http\S+", "", value) # Remove urls
+    value = re.sub(r"http", "", value)
+    letters_only = re.sub("[^a-zA-Z']", " ", value)
+    return ' '.join([lemmatizer.lemmatize(word) for word in letters_only.lower().split()])
+
+# highlighting function
+def highlighter(df, feature, target):
+    final_list = []
+    text_list = list(df[feature])
+    irrat_list = list(df[target])
+    for i, num in enumerate(irrat_list):
+        if num == 1:
+            final_list.append(f"\x1b[0;30;46m {text_list[i]} \n")
+        else:
+            final_list.append(f"\x1b[0;30;0m {text_list[i]} \n")
+    for sentence in final_list:
+        print(sentence)
