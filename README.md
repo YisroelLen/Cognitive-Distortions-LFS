@@ -30,9 +30,7 @@ All the data that was gathered is in the table below with their relevant links:
 
 <br>Since irrationality is something that requires context we wanted to train my data with larger n_grams and attempt to capture that "context". However we knew there was going to be a big issue with this whole idea in the first place, which we will describe and then address. We're using negativity data to predict irrationality. Meaning it will falsely predict that something is irrational very frequently when in fact it's just negative (High rate of False Negatives). Solution: Build several models that will make predictions, give them a weight based on how accurate they are at forecasting, and create a final prediction based off those weights. The formula that we will use for this is similar to the one used in the AdaBoosting models. Thanks to, Boom Devahastin Na Ayudhya, for helping nail the mathematical part of this down. This is what it will look like: <br>
 <br>
-Final_Predictions = $\text{sign}(\sum(\hat{y_1}w_1 + \hat{y_2}w_2....))$ <br>
-                    $w_t = \frac{1}{2}log(\frac{1 - \epsilon_t}{\epsilon_t})$ <br>
-                    $\epsilon_t = $ Misclassification Rate
+![Ensemble Method Formula](Images/Ensemble_Math.png)
 
 The testing data, which we gathered, is pretty evenly distributed between irrational and rational so our baseline model was 53.7%. The models that were used are Logistic Regression, Naive Bayes, Random Forest, Extra Trees, and the AdaBooster Classifier. They were chosen for their easily customizable regularization parameters, which were heavily relied upon to bring down issues with overfitting.
 
